@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sums
+      POSTGRES_PASSWORD: sums
+      POSTGRES_DB: sums
+    volumes:
+      - sums_pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sums"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: 4000
+      DATABASE_URL: postgres://sums:sums@db:5432/sums
+      DATABASE_SSL: "false"
+      JWT_SECRET: change-me-in-production-to-a-long-random-string
+      JWT_EXPIRES: 12h
+      CORS_ORIGIN: "*"
+      SEED_DEMO: "true"
+    ports:
+      - "4000:4000"
+
+volumes:
+  sums_pgdata:
